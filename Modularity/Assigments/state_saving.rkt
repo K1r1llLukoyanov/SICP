@@ -55,7 +55,7 @@
 ; Factorial(Functional programming)
 (define (factorial-funct n)
     (define (iter counter result) 
-        (if (> counter iter) 
+        (if (> counter n)
             result
             (iter (+ counter 1) (* result counter))))
     (iter 1 1))
@@ -66,7 +66,7 @@
     (let ((product 1)   ; definions of variables
           (counter 1))
         (define (iter)
-            (if (> counter 1)
+            (if (> counter n)
                 product
                 (begin 
                     (set! product (* product counter))  ; changing states
