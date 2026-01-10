@@ -25,4 +25,3 @@
 (define acc1 (make-account 100))
 ((acc1 `get-balance))
 ((acc1 `widthdraw) 25) ; prints 75
-
