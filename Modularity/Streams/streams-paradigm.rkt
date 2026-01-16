@@ -1,9 +1,11 @@
-#lang racket
+#lang sicp
 
 (define the-empty-stream `())
 (define (stream-null? stream) (null? stream))
 
 (define (stream-car stream) (car stream))
+
+(define (force proc) (proc))
 
 (define (stream-cdr stream) (force (cdr stream)))
 
@@ -75,3 +77,24 @@
        (apply proc (map stream-car argstreams))
        (apply stream-map
               (cons proc (map stream-cdr argstreams))))))
+
+(define (scaled-stream stream factor)
+    (cons-stream (* (stream-car stream) factor) (scaled-stream (stream-cdr stream) factor)))
+
+(define (sum-first-terms stream term-num)
+    (define (iter result pos counter)
+        (if (= counter term-num)
+            result
+            (iter (+ result (stream-car pos)) (stream-cdr pos) (+ counter 1))))
+    (iter 0 stream 0))
+
+(define (pi-summands n)
+    (cons-stream (/ 1.0 n)
+        (stream-map - (pi-summands (+ n 2)))))
+
+(define pi-stream
+    (scaled-stream (pi-summands 1) 4.0))
+
+(sum-first-terms pi-stream 1000)
+
+

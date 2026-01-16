@@ -241,3 +241,55 @@
     (cons-stream 0 (integrate-series cosine-stream)))
 
 (stream-ref cosine-stream 4)
+
+(define (mul-series s1 s2)
+    (cons-stream 
+        (* (stream-car s1) (stream-car s2)) 
+        (add-streams 
+            (scaled-stream (stream-cdr s2) (stream-car s1))
+            (mul-series (stream-cdr s1) s2))))
+
+(define square_sine (mul-series sine-stream sine-stream))
+(define square_cosine (mul-series cosine-stream cosine-stream))
+
+(define should-be-one (add-streams square_sine square_cosine))
+
+(define (sum-first-terms stream term-num)
+    (define (iter result pos counter)
+        (if (= counter term-num)
+            result
+            (iter (+ result (stream-car pos)) (stream-cdr pos) (+ counter 1))))
+    (iter 0 stream 0))
+
+(sum-first-terms should-be-one 20)
+(sum-first-terms exp-series 20)
+
+(define zero (cons-stream 0 zero))
+(define one (cons-stream 1 zero))
+
+(define (sub-streams s1 s2)
+    (add-streams s1 (stream-map - s2)))
+
+(define (invert-unit-series stream)
+    (define inverted-stream
+        (scaled-stream 
+            (cons-stream 1
+                (mul-series (scaled-stream (stream-cdr stream) -1) inverted-stream))
+            (/ 1.0 (stream-car stream))))
+    inverted-stream)
+
+(define should-be-one2 (invert-unit-series should-be-one))
+(define inverted-exp-series (invert-unit-series exp-series))
+
+(sum-first-terms should-be-one2 20)
+
+(sum-first-terms inverted-exp-series 20)
+
+(define (div-series s1 s2)
+    (if (= (stream-car s2) 0)
+        (error "Denomerator should have 0 as free coeff" s2)
+        (mul-streams s1 (invert-unit-series s2))))
+
+(define tan-series (div-series sine-stream cosine-stream))
+
+(sum-first-terms tan-series 10)
