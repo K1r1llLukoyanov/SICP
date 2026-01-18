@@ -1,5 +1,6 @@
 #lang sicp
 
+
 (define (square x) (* x x))
 
 (define the-empty-stream `())
@@ -98,69 +99,25 @@
     (iter 0 stream 0))
 
 
-(define (sum p)
-    (+ (car p) (cadr p)))
-
-(define (merge-pairs-stream weight p1 p2)
-    (cond
-        ((stream-null? p1) p2)
-        ((stream-null? p2) p1)
-        ((and (stream-null? p1) (stream-null? p2)) the-empty-stream)
-        (else
-            (let ((weight1 (weight (stream-car p1)))
-                  (weight2 (weight (stream-car p2))))
-                (cond 
-                    ((= weight1 weight2)
-                        (if (< (car (stream-car p1)) (car (stream-car p2)))
-                            (begin 
-                                (cons-stream (stream-car p1)
-                                    (merge-pairs-stream weight (stream-cdr p1) p2)))
-                            (begin
-                                (cons-stream (stream-car p2)
-                                    (merge-pairs-stream weight p1 (stream-car p2))))))
-                    ((< weight1 weight2)
-                        (cons-stream (stream-car p1)
-                            (merge-pairs-stream weight (stream-cdr p1) p2)))
-                    (else
-                        (cons-stream (stream-car p2)
-                            (merge-pairs-stream weight p1 (stream-cdr p2)))))))))
-
-(define (pairs weight s t)
-    (cons-stream 
-        (list (stream-car s) (stream-car t))
-        (merge-pairs-stream weight
-            (stream-map (lambda (x) (list (stream-car s) x)) (stream-cdr t))
-            (pairs weight (stream-cdr s) (stream-cdr t)))))
+(define (add-streams s1 s2)
+    (stream-map + s1 s2))
 
 
-(define (interleave s1 s2)
-    (if (stream-null? s1)
-        s2
-        (cons-stream (stream-car s1)
-            (interleave s2 (stream-cdr s1)))))
+(define (integrate integrand initial-value dt)
+    (define int
+        (cons-stream initial-value 
+            (add-streams int (scaled-stream integrand dt))))
+    int)
 
-(define (triplets s t u)
-    (cons-stream (list (stream-car s) (stream-car t) (stream-car u))
-        (interleave 
-            (interleave
-                (stream-map (lambda (x) (list (stream-car s) (stream-car t) x)) (stream-cdr u))
-                (stream-map (lambda (x) (list (stream-car s) (car x) (cadr x))) (pairs sum (stream-cdr t) (stream-cdr u))))
-            (triplets (stream-cdr s) (stream-cdr t) (stream-cdr u)))))
+(define (integral delayed-integrand initial-value dt)
+    (define int (cons-stream initial-value
+        (let ((integrand (force delayed-integrand)))
+            (add-streams int (scaled-stream integrand dt)))))
+    int)
 
-(define (pythagoras-stream triplets)
-    (stream-filter 
-        (lambda (x) (= (square (caddr x)) (+ (square (car x)) (square (cadr x))))) 
-        triplets))
+(define (solve f y0 dt)
+    (define y (integral (delay dy) y0 dt))
+    (define dy (stream-map f y))
+    y)
 
-(define ones (cons-stream 1 ones))
-(define integers (cons-stream 0 (stream-map + ones integers)))
-
-(define diff-pairs (pairs sum integers integers))
-(define diff-triplets (triplets integers integers integers))
-(define pythagoras (pythagoras-stream diff-triplets))
-
-(display-first diff-pairs 3)
-(display-first diff-triplets 100)
-
-(display-first pythagoras 100)
-
+(stream-ref (solve (lambda (y) y) 1 0.001) 1000)
